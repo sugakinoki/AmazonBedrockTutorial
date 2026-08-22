@@ -1,0 +1,2 @@
+# AmazonBedrockTutorial
+このリポジトリは、Amazon Bedrockの短期APIキーを使うことで、簡単にチャットbot作りを体験出来る、ベースのチャットアプリです。
