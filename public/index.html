@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bedrock 体験チャットbot</title>
+<style>
+  /* ==========================================================
+     【演習5】見た目を変えてみよう
+     この4行の色と、下の <h1> のタイトル文字を書き換えるだけで
+     雰囲気が変わります。ファイルを保存してブラウザを再読み込みすればOK
+     （サーバの再起動は不要です）。
+     ========================================================== */
+  :root {
+    --accent: #4f46e5;   /* テーマカラー（ボタン、自分の吹き出し） */
+    --bg: #f6f7fb;       /* 背景 */
+    --panel: #ffffff;    /* 吹き出し・パネル */
+    --text: #1f2333;     /* 文字 */
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif;
+    line-height: 1.7;
+  }
+
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid #e4e6ef;
+  }
+  h1 { margin: 0; font-size: 1.05rem; }
+  .model-badge {
+    font-size: .75rem;
+    color: #5a6072;
+    background: var(--bg);
+    border: 1px solid #e4e6ef;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .spacer { flex: 1 1 auto; }
+
+  button {
+    font: inherit;
+    cursor: pointer;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    transition: opacity .15s, background-color .15s;
+  }
+  button:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+
+  #reset {
+    padding: 6px 14px;
+    font-size: .85rem;
+    background: var(--panel);
+    border-color: #d3d6e4;
+    color: #444a5e;
+  }
+  #reset:hover:not(:disabled) { background: #eef0f7; }
+
+  main {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  #log { display: flex; flex-direction: column; gap: 14px; }
+
+  .msg {
+    max-width: 82%;
+    padding: 11px 15px;
+    border-radius: 14px;
+    background: var(--panel);
+    border: 1px solid #e4e6ef;
+    /* AIの返答に含まれる改行をそのまま表示します */
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .msg.user {
+    align-self: flex-end;
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .msg.assistant { align-self: flex-start; }
+  .msg.error {
+    align-self: stretch;
+    max-width: 100%;
+    background: #fff4f4;
+    border-color: #f0b7b7;
+    color: #8d2020;
+    font-size: .9rem;
+  }
+  .msg .who {
+    display: block;
+    font-size: .7rem;
+    opacity: .75;
+    margin-bottom: 3px;
+    font-weight: 700;
+    letter-spacing: .04em;
+  }
+  .usage {
+    align-self: flex-start;
+    font-size: .72rem;
+    color: #6b7180;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .thinking { align-self: flex-start; display: flex; gap: 5px; padding: 14px 16px; }
+  .thinking span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #b6bbcb;
+    animation: blink 1.4s infinite both;
+  }
+  .thinking span:nth-child(2) { animation-delay: .2s; }
+  .thinking span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: .3 } 40% { opacity: 1 } }
+  @media (prefers-reduced-motion: reduce) {
+    .thinking span { animation: none; opacity: .6; }
+  }
+
+  footer {
+    position: sticky;
+    bottom: 0;
+    background: var(--panel);
+    border-top: 1px solid #e4e6ef;
+    padding: 12px 20px;
+  }
+  form {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  textarea {
+    flex: 1 1 auto;
+    font: inherit;
+    color: inherit;
+    padding: 10px 12px;
+    border: 1px solid #d3d6e4;
+    border-radius: 10px;
+    background: #fff;
+    resize: none;
+    max-height: 160px;
+  }
+  textarea:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+  #send {
+    padding: 10px 22px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+  #send:hover:not(:disabled) { opacity: .88; }
+
+  .hint {
+    max-width: 760px;
+    margin: 7px auto 0;
+    font-size: .72rem;
+    color: #7b8090;
+  }
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px;
+    margin: -1px; padding: 0; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <!-- 【演習5】このタイトルも自由に変えてみてください -->
+  <h1>Bedrock 体験チャットbot</h1>
+  <span class="model-badge" id="model-badge">接続中…</span>
+  <span class="spacer"></span>
+  <button type="button" id="reset">会話をリセット</button>
+</header>
+
+<main>
+  <!-- aria-live: 新しい発言が増えたことをスクリーンリーダーに伝えます -->
+  <div id="log" role="log" aria-live="polite" aria-label="会話の履歴"></div>
+</main>
+
+<footer>
+  <form id="form">
+    <label class="visually-hidden" for="input">メッセージを入力</label>
+    <textarea id="input" rows="1" placeholder="メッセージを入力…" autocomplete="off" required></textarea>
+    <button type="submit" id="send">送信</button>
+  </form>
+  <p class="hint">Enter で送信 / Shift + Enter で改行</p>
+</footer>
+
+<script>
+  const log = document.getElementById('log');
+  const form = document.getElementById('form');
+  const input = document.getElementById('input');
+  const send = document.getElementById('send');
+  const reset = document.getElementById('reset');
+  const badge = document.getElementById('model-badge');
+
+  /**
+   * 吹き出しを1つ追加します。
+   * 中身は textContent で入れています。innerHTML を使わないことで、
+   * 返ってきた文字列に HTML が混ざっていても、そのまま文字として表示されます。
+   */
+  function addMessage(role, text) {
+    const el = document.createElement('div');
+    el.className = `msg ${role}`;
+
+    const who = document.createElement('span');
+    who.className = 'who';
+    who.textContent = role === 'user' ? 'あなた' : role === 'error' ? 'エラー' : 'AI';
+
+    const body = document.createElement('span');
+    body.textContent = text;
+
+    el.append(who, body);
+    log.append(el);
+    el.scrollIntoView({ block: 'end', behavior: 'smooth' });
+    return el;
+  }
+
+  function showThinking() {
+    const el = document.createElement('div');
+    el.className = 'thinking';
+    el.setAttribute('aria-label', '応答を待っています');
+    el.innerHTML = '<span></span><span></span><span></span>';
+    log.append(el);
+    el.scrollIntoView({ block: 'end', behavior: 'smooth' });
+    return el;
+  }
+
+  function setBusy(busy) {
+    send.disabled = busy;
+    reset.disabled = busy;
+    input.disabled = busy;
+    if (!busy) input.focus();
+  }
+
+  // 起動時に、どのモデルにつながっているかを表示します
+  fetch('/api/config')
+    .then((r) => r.json())
+    .then((c) => { badge.textContent = c.modelId ? `${c.modelId} @ ${c.region}` : 'MODEL_ID が未設定'; })
+    .catch(() => { badge.textContent = '設定を読めませんでした'; });
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const message = input.value.trim();
+    if (message === '') return;
+
+    addMessage('user', message);
+    input.value = '';
+    input.style.height = 'auto';
+    setBusy(true);
+
+    const thinking = showThinking();
+
+    try {
+      // ここでサーバの /api/chat を呼びます。
+      // Bedrock を直接呼ばないのは、APIキーをブラウザに置かないためです。
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message }),
+      });
+      const data = await response.json();
+      thinking.remove();
+
+      if (!response.ok) {
+        addMessage('error', data.error ?? '不明なエラーが発生しました。');
+        return;
+      }
+
+      addMessage('assistant', data.reply);
+
+      // 使ったトークン数。だいたいの料金感をつかむ手がかりになります。
+      if (data.usage) {
+        const u = document.createElement('div');
+        u.className = 'usage';
+        u.textContent = `入力 ${data.usage.inputTokens} / 出力 ${data.usage.outputTokens} トークン`;
+        log.append(u);
+      }
+    } catch (error) {
+      thinking.remove();
+      addMessage('error', `サーバに接続できませんでした。app.js が起動しているか確認してください。（${error.message}）`);
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  reset.addEventListener('click', async () => {
+    await fetch('/api/reset', { method: 'POST' });
+    log.replaceChildren();
+    input.focus();
+  });
+
+  // Enter で送信、Shift + Enter で改行
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+      event.preventDefault();
+      form.requestSubmit();
+    }
+  });
+
+  // 入力量に応じて高さを自動調整
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = `${Math.min(input.scrollHeight, 160)}px`;
+  });
+
+  input.focus();
+</script>
+</body>
+</html>

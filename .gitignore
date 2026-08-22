@@ -1,0 +1,9 @@
+# APIキーが入るファイル。絶対にコミットしないこと
+.env
+
+# OS / エディタ
+.DS_Store
+.vscode/
+
+# 使いませんが、念のため
+node_modules/

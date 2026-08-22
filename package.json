@@ -1,0 +1,14 @@
+{
+  "name": "amazon-bedrock-tutorial",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Amazon Bedrock の短期 API キーを貼るだけで動く、体験用チャットbot（依存パッケージゼロ）",
+  "scripts": {
+    "start": "node app.js",
+    "models": "node models.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
