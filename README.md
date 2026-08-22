@@ -57,21 +57,28 @@ git clone https://github.com/<あなたのユーザー名>/AmazonBedrockTutorial
 cd AmazonBedrockTutorial
 ```
 
-### 2. モデルアクセスを有効化する
+### 2. モデルアクセスについて（多くの場合、作業は不要）
 
-**ここを飛ばすと、あとで必ず `AccessDeniedException` で止まります。**
+商用リージョンでは、**すべての基盤モデルへのアクセスが既定で有効**になっています。サードパーティ製モデルを初めて呼び出すと、Bedrock が裏で自動的にサブスクリプション処理を行います（[Request access to models](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html)）。
 
-1. [Bedrock コンソール](https://console.aws.amazon.com/bedrock) を開く
-2. 画面右上で**使いたいリージョンを選ぶ**（例: アジアパシフィック（東京））
-3. 左メニューの「モデルアクセス」を開く
-4. 使いたいモデル（Claude や Nova など）を有効化する
+つまり、以前必要だった「コンソールでモデルアクセスを有効化する」操作は、基本的にもう踏まなくて済みます。ただし自動有効化が成立するには前提が3つあります。
+
+- IAM に `aws-marketplace:Subscribe` / `Unsubscribe` / `ViewSubscriptions` があること
+- アカウントに有効な支払い方法が設定されていること
+- **Anthropic（Claude）のモデルを使う場合のみ**、初回利用フォームの提出が必要
+
+Claude を使いたい場合だけ、[Bedrock コンソール](https://console.aws.amazon.com/bedrock)のモデルカタログから Anthropic のモデルを選び、用途を記述するフォームを提出してください。**アカウント（または AWS Organizations の管理アカウント）につき1回だけ**で、提出すれば即時に使えるようになります。会社のサイトを持っていない個人開発者や学生の場合、GitHub プロフィールや個人のポートフォリオ URL を書けば問題ないと明記されています。
+
+**この手順を完全に飛ばしたいなら、手順5で Amazon Nova を選んでください。** Amazon 自前のモデルはフォーム提出もサブスクリプションも不要です。
+
+> 初回呼び出し時は、自動サブスクリプションの完了までに最大15分かかることがあります。その間は `AccessDeniedException` が返る場合があるので、少し待ってから再試行してください。
 
 ### 3. 短期 API キーを発行する
 
-同じ Bedrock コンソールで、左メニューの「API キー」→「**短期 API キー**」→ 発行。表示されたキーをコピーします。
+[Bedrock コンソール](https://console.aws.amazon.com/bedrock)を開き、画面右上で**使いたいリージョンを選んだうえで**、左メニューの「API キー」→「**短期 API キー**」→ 発行。表示されたキーをコピーします。
 
 > 短期キーは最長 12 時間で失効します（[ドキュメント](https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys.html)）。翌日動かなくなったら、再発行して貼り替えるだけです。
-> また、**キーは発行したリージョン向けの呼び出しにしか使えません。** 手順2で選んだリージョンを覚えておいてください。
+> また、**キーは発行したリージョン向けの呼び出しにしか使えません。** ここで選んだリージョンを覚えておいてください。
 
 ### 4. `.env` を作ってキーを貼る
 
@@ -88,15 +95,17 @@ AWS_REGION=ap-northeast-1
 
 `.env` は `.gitignore` で除外済みなので、GitHub には push されません。
 
-### 5. 使えるモデル ID を調べて設定する
+### 5. モデルを選ぶ（初回はそのままでOK）
 
-利用できるモデル ID はアカウントとリージョンで違い、モデル自体も頻繁に入れ替わります。決め打ちにせず、実際の一覧を取ってください。
+`.env` の `MODEL_ID` には、追加の手続きが不要な `global.amazon.nova-2-lite-v1:0`（Amazon Nova 2 Lite）が既定で入っています。**まずは触らず、次の手順6に進んでかまいません。**
+
+モデルを変えたいとき、あるいはエラーが出たときは、利用できる ID の一覧を取ってください。
 
 ```bash
 npm run models
 ```
 
-表示された ID を1つコピーして、`.env` の `MODEL_ID` に貼ります。
+利用できるモデル ID はアカウントとリージョンで違い、モデル自体も頻繁に入れ替わります。表示された中から1つコピーして、`.env` の `MODEL_ID` に貼り替えます。
 
 このコマンドは動作確認も兼ねています。一覧が取れれば、キーとリージョンは正しいと確認できます。
 
@@ -104,26 +113,29 @@ npm run models
 
 すべて Converse API に対応しているので、このリポジトリでそのまま使えます。
 
-| モデル | `MODEL_ID` に書く値 | メモ |
-|---|---|---|
-| **GPT-5.6 Terra** | `global.openai.gpt-5.6-terra` | OpenAI のバランス型。この中では安め。**まず試すならこれ** |
-| **Claude Opus 5** | `global.anthropic.claude-opus-5` | Anthropic の最上位。高性能だが高価 |
-| **GPT-5.6 Sol** | `global.openai.gpt-5.6-sol` | OpenAI の最上位。最も高価 |
-| **Claude Fable 5** | `global.anthropic.claude-fable-5` | 高性能だが**この体験版には不向き**（下記） |
+| モデル | `MODEL_ID` に書く値 | 追加手続き | メモ |
+|---|---|---|---|
+| **Amazon Nova 2 Lite** | `global.amazon.nova-2-lite-v1:0` | **不要** | Amazon 自前の低コストモデル。**まず試すならこれ** |
+| **GPT-5.6 Terra** | `global.openai.gpt-5.6-terra` | プロジェクト権限 | OpenAI のバランス型 |
+| **GPT-5.6 Sol** | `global.openai.gpt-5.6-sol` | プロジェクト権限 | OpenAI の最上位。最も高価 |
+| **Claude Opus 5** | `global.anthropic.claude-opus-5` | 初回フォーム | Anthropic の最上位。高性能だが高価 |
+| **Claude Fable 5** | `global.anthropic.claude-fable-5` | 初回フォーム + 追加設定 | **この体験版には不向き**（下記） |
+
+**最初の1回は Nova 2 Lite を強くおすすめします。** 追加の手続きが何もなく、単価も安いので、「キーを貼るだけで動く」を最短で体験できます。他のモデルは演習6で乗り換える対象にしてください。US 内なら `us.amazon.nova-2-lite-v1:0` も使えます。
 
 `global.` の代わりに地域を絞った版もあります。Opus 5 は `us.` `eu.` `au.`、GPT-5.6 系と Fable 5 は `us.`（Terra はインド向けに `in.` も）。データの置き場所を絞る必要がなければ `global.` がいちばん確実です。
 
-**先頭のプレフィックスは省略できません。** ここに挙げた4モデルはいずれも In-Region 呼び出しに対応しておらず、素の ID（`anthropic.claude-opus-5` など）では呼べません。
+**先頭のプレフィックスは省略できません。** ここに挙げたモデルは In-Region 呼び出しに対応しておらず、素の ID（`anthropic.claude-opus-5` など）では呼べません。
 
-補足が必要なものだけ書き足します。
+「追加手続き」列の中身を補足します。
 
-- **GPT-5.6 系**は、IAM 側で既定プロジェクト（`project/default`）に対する `bedrock:InvokeModel` 権限も必要です
-- **Claude Fable 5** は3つ理由で初心者向けではありません。①`temperature` が 1.0 か未指定のみなので、`app.js` の `TEMPERATURE` を `null` にしないとエラーになり、演習3が成立しません ②利用前に Data Retention API でデータ共有のオプトインが必要で、コンソールに設定画面がなく API を直接叩く必要があります ③安全性の判定が厳しく、ふつうの質問でも回答を拒否することがあります
-- **Opus 5 と Sol** は最上位モデルなので単価が高めです。演習を回すだけなら Terra か、`npm run models` に出てくる軽量モデル（Haiku、Luna、Nova 系など）で十分です
+- **プロジェクト権限**（GPT-5.6 系）: IAM 側で既定プロジェクト（`project/default`）に対する `bedrock:InvokeModel` 権限が必要です
+- **初回フォーム**（Claude 系）: 手順2のとおり、アカウントにつき1回だけ用途フォームの提出が必要です
+- **Claude Fable 5** はさらに2つ厄介です。①`temperature` が 1.0 か未指定のみなので、`app.js` の `TEMPERATURE` を `null` にしないとエラーになり、演習3が成立しません ②利用前に Data Retention API でデータ共有のオプトインが必要で、コンソールに設定画面がなく API を直接叩く必要があります。加えて安全性の判定が厳しく、ふつうの質問でも回答を拒否することがあります
+
+Opus 5 と Sol は最上位モデルなので単価が高めです。演習を回すだけなら Nova 2 Lite か Terra、あるいは `npm run models` に出てくる軽量モデル（Haiku、Luna など）で十分です。
 
 > モデルは頻繁に追加・入れ替えされます。上の表が古くなっている可能性があるので、**最終的には `npm run models` の出力を正としてください。**
->
-> また、ID を正しく書いても Bedrock コンソールの「モデルアクセス」で有効化していなければ拒否されます（手順2）。
 
 ### 6. 起動する
 
@@ -284,11 +296,13 @@ const MAX_HISTORY = 20;
 まず `npm run models` を実行してください。ここで一覧が取れるかどうかで、原因が2つに切り分けられます。
 
 - **一覧が取れない** → キーかリージョンの問題
-- **一覧は取れるがチャットが失敗する** → モデル ID かモデルアクセスの問題
+- **一覧は取れるがチャットが失敗する** → モデル ID か、そのモデル固有の条件の問題
+
+いちばん手軽な切り分けは、`.env` の `MODEL_ID` を `global.amazon.nova-2-lite-v1:0` に変えてみることです。これで動けば、原因は元のモデル固有の条件（初回フォームやプロジェクト権限）に絞れます。
 
 | 症状 | 原因と対処 |
 |---|---|
-| `AccessDeniedException` / 403 | ①キーが失効した（最長12時間）→ 再発行して `.env` を更新 ②手順2のモデルアクセス有効化を忘れている ③モデル固有の追加条件（GPT-5.6 系の既定プロジェクト権限、Fable 5 のデータ保持オプトイン） |
+| `AccessDeniedException` / 403 | ①キーが失効した（最長12時間）→ 再発行して `.env` を更新。まずこれを疑う ②初回呼び出しの自動サブスクリプション待ち。最大15分かかるので数分待って再試行 ③Claude 系なら初回利用フォームが未提出（手順2） ④GPT-5.6 系なら `project/default` への `bedrock:InvokeModel` 権限が不足 ⑤Fable 5 ならデータ保持のオプトインが未実施 |
 | `ValidationException` | モデル ID の形式違い。`global.` などが付いた推論プロファイル ID が必要な可能性。`npm run models` で確認 |
 | `temperature` を含むエラー | そのモデルは `temperature` を受け付けません。`app.js` の `TEMPERATURE` を `null` に変更 |
 | `ResourceNotFoundException` / 404 | モデル ID の打ち間違い、または `AWS_REGION` とキー発行リージョンの不一致 |

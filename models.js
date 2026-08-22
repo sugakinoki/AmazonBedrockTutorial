@@ -9,7 +9,7 @@
 //
 // チャットが動かないときの切り分けにも使えます。
 // ここで一覧が取れれば「キーとリージョンは正しい」と分かるので、
-// 残る原因はモデル ID かモデルアクセスの有効化に絞れます。
+// 残る原因はモデル ID か、そのモデル固有の条件（初回フォームなど）に絞れます。
 // ============================================================
 
 import { requireConfig } from './env.js';
@@ -120,8 +120,10 @@ try {
   console.log('使いたい ID を1つコピーして、.env の MODEL_ID に貼り付けてください。');
   console.log('例:  MODEL_ID=' + (profileIds[0]?.id ?? modelIds[0]?.id ?? 'コピーしたID'));
   console.log('='.repeat(60));
-  console.log('\n※ 一覧に出ていても、Bedrock コンソールの「モデルアクセス」で');
-  console.log('   有効化していないモデルは呼び出すと拒否されます。\n');
+  console.log('\n※ 商用リージョンではモデルアクセスは既定で有効ですが、初回呼び出しだけ');
+  console.log('   自動サブスクリプションの完了まで最大15分かかることがあります。');
+  console.log('   また Claude 系はアカウントにつき1回、初回利用フォームの提出が必要です。');
+  console.log('   追加手続きなしで試したい場合は global.amazon.nova-2-lite-v1:0 が手軽です。\n');
 } catch (error) {
   console.error(`\n${error.message}\n`);
   process.exit(1);
